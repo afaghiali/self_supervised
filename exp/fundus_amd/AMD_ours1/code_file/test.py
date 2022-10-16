@@ -7,7 +7,7 @@ import numpy as np
 from lib.utils import evaluation_metrics
 import random
 import os
-
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 my_whole_seed = 111
 random.seed(my_whole_seed)
 np.random.seed(my_whole_seed)
@@ -22,9 +22,10 @@ os.environ['PYTHONHASHSEED'] = str(my_whole_seed)
 def kNN(args, net, lemniscate, trainloader, testloader, K, sigma, C):
     net.eval()
     net_time = AverageMeter()
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
-    trainLabels = torch.LongTensor(trainloader.dataset.targets).cuda()
+    trainLabels = torch.LongTensor(trainloader.dataset.targets).to(device)
     trainnames = []
     if args.multiaug:
     #     recomupte
@@ -42,7 +43,7 @@ def kNN(args, net, lemniscate, trainloader, testloader, K, sigma, C):
             temploader = torch.utils.data.DataLoader(trainloader.dataset, batch_size=num, shuffle=False, num_workers=4, worker_init_fn=random.seed(111))
             for batch_idx, (inputs, _, targets, indexes) in enumerate(temploader):
                 if args.saveembed:
-                    inputs = torch.cat(inputs, 0).cuda()
+                    inputs = torch.cat(inputs, 0).to(device)
                     # ori_data = dataX[:int(dataX.shape[0] / 2)]
                     # syn_data = dataX[int(dataX.shape[0] / 2):]
                     # data = [ori_data, syn_data]
@@ -64,7 +65,7 @@ def kNN(args, net, lemniscate, trainloader, testloader, K, sigma, C):
                 trainnames += list(indexes)
         trainloader.dataset.transform = transform_bak
         trainloader.dataset.train = True
-        trainFeatures = torch.Tensor(trainFeatures).cuda()
+        trainFeatures = torch.Tensor(trainFeatures).to(device)
     else:
         trainFeatures = lemniscate.memory.t()
 
@@ -73,11 +74,11 @@ def kNN(args, net, lemniscate, trainloader, testloader, K, sigma, C):
     label_box = []
 
     with torch.no_grad():
-        retrieval_one_hot = torch.zeros(K, C).cuda()
+        retrieval_one_hot = torch.zeros(K, C).to(device)
         for batch_idx, (inputs, targets, indexes, name) in enumerate(testloader):
 
             end = time.time()
-            targets = targets.cuda()
+            targets = targets.to(device)
             batchSize = inputs.size(0)
             if args.multitask and args.domain:
                 features, features_rot = net(inputs)

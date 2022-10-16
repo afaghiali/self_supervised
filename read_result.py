@@ -32,8 +32,9 @@ args = parser.parse_args()
 #     print ("std ", np.around(std*100, decimals=2))
 
 def read_txtfile():
-    data = np.genfromtxt("savedmodels/result.txt", usecols=1, dtype=float)
+    data = np.genfromtxt("/content/self_supervised/exp/fundus_amd/AMD_ours1/resultaa.txt", usecols=1, dtype=float)
     results = np.reshape(data, (5,5))
+    # results = np.reshape(data, (8,5))
     a = np.mean(results,axis=0)
     print ("5-fold result: ")
     print ("AUC", np.around(a[0]*100, decimals=2))

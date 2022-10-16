@@ -175,9 +175,54 @@ def main():
         if args.resume:
             if os.path.isfile(args.resume):
                 print("=> loading checkpoint '{}'".format(args.resume))
-                checkpoint = torch.load(args.resume)
+                # checkpoint = torch.load(args.resume)#for training
+                checkpoint = torch.load(args.resume,map_location='cpu')#for evaluating
+                # print(checkpoint['state_dict'])
+                # print(model.layer1)
+                print("after checkpoint")
                 args.start_epoch = checkpoint['epoch']
-                model.load_state_dict(checkpoint['state_dict'])
+                # child_counter = 0
+                # for child in model.children():
+                #   print(" child", child_counter, "is:")
+                #   print(child)
+                #   child_counter += 1
+   
+   
+                # child_counter = 0
+                # for child in module.children():
+                #   print(" child", child_counter, "is:")
+                #   print(child)
+                #   child_counter += 1
+                # for name, param in model.named_parameters():
+                #   print(name)
+
+                  
+
+
+
+                   
+                     
+                    
+                print(type(checkpoint['state_dict']))
+                from collections import OrderedDict
+                
+                new_state_dict = OrderedDict()
+                for k, v in checkpoint['state_dict'].items():
+                  name = k[7:] # remove `module.`
+                  new_state_dict[name] = v
+                  # print(k)
+                # print(new_state_dict)
+                # load params
+                
+                # for name, param in model.named_parameters():
+                #   print(name)
+                # print(checkpoint['state_dict'].item())
+                # model.load_state_dict(checkpoint['state_dict'])
+                # model.load_my_state_dict(checkpoint['state_dict'])
+                model.load_state_dict(new_state_dict)
+
+                
+                # map_location=torch.device('cpu') 
                 lemniscate = checkpoint['lemniscate']
                 optimizer.load_state_dict(checkpoint['optimizer'])
                 print("=> loaded checkpoint '{}' (epoch {})"
@@ -189,7 +234,7 @@ def main():
             knn_num = 100
             auc, acc, precision, recall, f1score = kNN(args, model, lemniscate, train_loader, val_loader, knn_num, args.nce_t, 2)
             print ("auc", auc)
-            f = open("savedmodels/result.txt", "a+")
+            f = open("/content/self_supervised/exp/fundus_amd/AMD_ours1/resultaa.txt", "a+")
             f.write("auc: %.4f\n" % (auc))
             f.write("acc: %.4f\n" % (acc))
             f.write("pre: %.4f\n" % (precision))
@@ -227,12 +272,12 @@ def main():
 
             # save checkpoint
             if epoch % 1000 == 0 or (epoch in [1600, 1800, 2000]):
-                auc, acc, precision, recall, f1score = kNN(args, model, lemniscate, train_loader, val_loader, 100,
+                aucc, acc, precision, recall, f1score = kNN(args, model, lemniscate, train_loader, val_loader, 100,
                                                            args.nce_t, 2)
                 # save to txt
-                f = open(args.result+"/result.txt","a+")
+                f = open(args.result+"/resultaa.txt","a+")
                 f.write("epoch " + str(epoch) + "\n")
-                f.write("auc: %.4f\n" % (auc))
+                f.write("aucc: %.4f\n" % (aucc))
                 f.write("acc: %.4f\n" % (acc))
                 f.write("pre: %.4f\n" % (precision))
                 f.write("recall: %.4f\n" % (recall))
@@ -248,6 +293,7 @@ def main():
 
 
 def train(train_loader, model, lemniscate, criterion, optimizer, epoch, writer):
+  
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
@@ -286,8 +332,8 @@ def train(train_loader, model, lemniscate, criterion, optimizer, epoch, writer):
             loss = criterion(feature, index) / args.iter_size
         else:
             # instance discrimination memory bank
-            input = input.cuda()
-            index = index.cuda()
+            input = input.to(device)
+            index = index.to(device)
 
             feature = model(input)
             output = lemniscate(feature, index)
@@ -319,6 +365,22 @@ def train(train_loader, model, lemniscate, criterion, optimizer, epoch, writer):
     writer.add_scalar("losses_rot", losses_rot.avg, epoch)
 
     return losses.avg
+def load_my_state_dict(self,state_dict):
+
+    own_state=self.state_dict()
+    for name,param in state_dict.items():
+      if name not in own_state:
+        continue
+      if isinstance(param,parameter): 
+        param=param.data
+      own_state[name].copy_(param)
+    
+      
+  
+    
+  
+
+
 
 
 
